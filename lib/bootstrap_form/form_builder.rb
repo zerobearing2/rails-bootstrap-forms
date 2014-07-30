@@ -96,18 +96,32 @@ module BootstrapForm
     def check_box_with_bootstrap(name, options = {}, checked_value = "1", unchecked_value = "0", &block)
       options = options.symbolize_keys!
 
-      html = check_box_without_bootstrap(name, options.except(:label, :help, :inline), checked_value, unchecked_value)
-      label_content = block_given? ? capture(&block) : options[:label]
-      html.concat(" ").concat(label_content || (object && object.class.human_attribute_name(name)) || name.to_s.humanize)
+      #
+      # compile the tag dom id.
+      # if :multiple, include the checkbox value.
+      #
+      options[:id] = [
+        object_name, 
+        name, 
+        (options[:multiple] ? checked_value : nil)
+      ].compact.join("_").gsub(/[^a-z0-9]/, '_')
 
-      label_name = name
-      label_name = "#{name}_#{checked_value}" if options[:multiple]
-
+      #
+      # compile html
+      #
+      html = [
+        check_box_without_bootstrap(name, options.except(:label, :help, :inline), checked_value, unchecked_value),
+        (block_given? ? capture(&block) : options[:label]) || (object && object.class.human_attribute_name(name)) || name.to_s.humanize
+      ].join(" ").html_safe
+      
+      #
+      # render inline or block
+      #
       if options[:inline]
-        label(label_name, html, class: "checkbox-inline")
+        label(name, html, class: "checkbox-inline", for: options[:id])
       else
         content_tag(:div, class: "checkbox") do
-          label(label_name, html)
+          label(name, html, for: options[:id])
         end
       end
     end
